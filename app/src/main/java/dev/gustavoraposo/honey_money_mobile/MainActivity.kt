@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import dagger.hilt.android.AndroidEntryPoint
-import dev.gustavoraposo.honey_money_mobile.ui.feature.auth.LoginScreen
+import dev.gustavoraposo.honey_money_mobile.ui.navigation.AppNavGraph
 import dev.gustavoraposo.honey_money_mobile.ui.theme.HoneymoneymobileTheme
 
 @AndroidEntryPoint
@@ -15,7 +15,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             HoneymoneymobileTheme {
-                LoginScreen()
+                AppNavGraph()
             }
         }
     }
