@@ -1,0 +1,123 @@
+# CLAUDE.md
+
+Este arquivo fornece orientações ao Claude Code (claude.ai/code) ao trabalhar com o código deste repositório.
+
+## Visão Geral do Projeto
+
+**honey-money-mobile** é um app Android de **gerenciamento de tarefas e controle financeiro**, desenvolvido em Kotlin com Jetpack Compose. Atualmente no estado inicial de scaffold com uma única `MainActivity`.
+
+- **Min SDK**: 24 | **Target/Compile SDK**: 36
+- **AGP**: 9.0.1 | **Kotlin**: 2.0.21
+- **UI**: Jetpack Compose + Material3 com dynamic color (Android 12+)
+
+## Comandos de Build
+
+```bash
+# Build debug APK
+./gradlew assembleDebug
+
+# Build release APK
+./gradlew assembleRelease
+
+# Rodar todos os testes unitários
+./gradlew test
+
+# Rodar uma classe de teste específica
+./gradlew test --tests "dev.gustavoraposo.honey_money_mobile.ExampleUnitTest"
+
+# Rodar testes instrumentados (requer dispositivo/emulador conectado)
+./gradlew connectedAndroidTest
+
+# Limpar build
+./gradlew clean
+```
+
+No Windows, use `gradlew.bat` em vez de `./gradlew`.
+
+## Arquitetura
+
+App Android single-module (`:app`) seguindo o padrão **MVVM** com separação estrita de camadas. O código-fonte fica em `app/src/main/java/dev/gustavoraposo/honey_money_mobile/`.
+
+### Estrutura de Pacotes
+
+```
+honey_money_mobile/
+├── data/
+│   ├── local/          # Room DAOs, Database, Entities
+│   ├── remote/         # Retrofit API interfaces, DTOs
+│   └── repository/     # Implementações dos repositories
+├── domain/
+│   ├── model/          # Modelos de domínio (entidades de negócio)
+│   ├── repository/     # Interfaces dos repositories
+│   └── usecase/        # Use cases (um por arquivo, uma responsabilidade)
+├── ui/
+│   ├── feature/        # Telas organizadas por funcionalidade (tasks/, finance/)
+│   │   └── <feature>/
+│   │       ├── <Feature>Screen.kt
+│   │       └── <Feature>ViewModel.kt
+│   └── theme/          # Theme.kt, Color.kt, Type.kt
+├── di/                 # Módulos Hilt (DatabaseModule, NetworkModule, RepositoryModule)
+└── MainActivity.kt
+```
+
+### Camadas e Responsabilidades
+
+- **`domain/model`** — classes de dados puras, sem dependências do Android
+- **`domain/repository`** — interfaces que definem contratos de acesso a dados
+- **`domain/usecase`** — lógica de negócio; cada use case tem um único método `invoke()`
+- **`data/repository`** — implementações concretas dos repositories, fazendo ponte entre `local` e `remote`
+- **`data/local`** — Room: `@Entity`, `@Dao`, `@Database`
+- **`data/remote`** — Retrofit: `@Api` interfaces e DTOs de resposta
+- **`ui/.../ViewModel`** — expõe `StateFlow`/`LiveData`, chama use cases, sem lógica de negócio
+- **`di/`** — módulos Hilt com `@Module` + `@InstallIn`
+
+### Stack de Bibliotecas
+
+| Função                  | Biblioteca                  |
+|-------------------------|-----------------------------|
+| Persistência local      | Room                        |
+| Chamadas REST           | Retrofit                    |
+| Injeção de dependência  | Dagger/Hilt                 |
+| UI                      | Jetpack Compose + Material3 |
+
+As dependências são gerenciadas via version catalog em `gradle/libs.versions.toml`.
+
+## Metodologia de Desenvolvimento: TDD
+
+**Todo desenvolvimento deve seguir o ciclo Red → Green → Refactor.**
+
+### Fluxo obrigatório
+
+1. **RED** — Escrever o teste antes da implementação. O teste deve falhar.
+2. **GREEN** — Implementar o mínimo necessário para o teste passar.
+3. **REFACTOR** — Melhorar o código mantendo todos os testes verdes.
+
+Nunca entregar uma funcionalidade sem que os testes correspondentes já existam e passem.
+
+### Estrutura de Testes
+
+```
+app/src/
+├── test/                          # Testes unitários (JUnit + Mockk/Mockito)
+│   └── java/dev/gustavoraposo/honey_money_mobile/
+│       ├── domain/
+│       │   └── usecase/           # Testes dos use cases
+│       ├── data/
+│       │   └── repository/        # Testes dos repositories (com mocks)
+│       └── ui/
+│           └── <feature>/         # Testes dos ViewModels
+└── androidTest/                   # Testes E2E / instrumentados
+    └── java/dev/gustavoraposo/honey_money_mobile/
+        ├── data/
+        │   └── local/             # Testes do Room (in-memory database)
+        └── ui/
+            └── <feature>/         # Testes de UI com Compose Testing
+```
+
+### Convenções de Teste
+
+- Nome dos testes: `dado_<contexto>_quando_<acao>_entao_<resultado>` (ou em inglês: `given_when_then`)
+- Use cases testados com repositórios mockados
+- ViewModels testados com use cases mockados
+- Room testado com banco em memória (`Room.inMemoryDatabaseBuilder`)
+- Testes de UI com `ComposeTestRule` do `androidx.compose.ui.test`
