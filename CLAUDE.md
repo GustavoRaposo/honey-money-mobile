@@ -121,3 +121,59 @@ app/src/
 - ViewModels testados com use cases mockados
 - Room testado com banco em memória (`Room.inMemoryDatabaseBuilder`)
 - Testes de UI com `ComposeTestRule` do `androidx.compose.ui.test`
+
+## Fluxo de Desenvolvimento: GitHub Flow
+
+O projeto adota **GitHub Flow**: toda branch nasce da `master` e é mergeada de volta na `master`.
+
+### Nomenclatura de Branches
+
+```
+<tipo>/<descricao-curta-em-kebab-case>
+```
+
+| Tipo        | Uso                                               |
+|-------------|---------------------------------------------------|
+| `feat/`     | Nova funcionalidade                               |
+| `fix/`      | Correção de bug                                   |
+| `refactor/` | Refatoração sem mudança de comportamento          |
+| `test/`     | Adição ou correção de testes                      |
+| `chore/`    | Tarefas de manutenção (deps, build, CI)           |
+| `docs/`     | Documentação                                      |
+
+Exemplos: `feat/tela-de-cadastro`, `fix/crash-no-login`, `refactor/viewmodel-auth`
+
+### Nomenclatura de Commits
+
+Seguir **Conventional Commits**:
+
+```
+<tipo>(<escopo>): <descrição no imperativo, em português>
+```
+
+Exemplos:
+```
+feat(auth): adiciona tela de cadastro com validação de e-mail
+fix(login): corrige crash ao submeter formulário vazio
+test(auth): adiciona testes unitários para LoginUseCase
+chore(deps): atualiza Retrofit para 2.11.0
+```
+
+### Regras
+
+- Nunca commitar diretamente na `master`
+- Toda branch deve ter PR antes do merge
+- O pre-commit hook (abaixo) bloqueia commits com testes falhando
+
+## Pre-commit Hook
+
+O arquivo `.git/hooks/pre-commit` executa todos os testes unitários antes de cada commit. Se qualquer teste falhar, o commit é bloqueado até que os erros sejam corrigidos e os testes passem.
+
+Para instalar/reinstalar o hook manualmente:
+
+```bash
+cp scripts/pre-commit .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+
+O hook roda: `./gradlew testDevelopmentDebugUnitTest`
