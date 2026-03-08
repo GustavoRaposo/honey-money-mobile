@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import dev.gustavoraposo.honey_money_mobile.ui.feature.auth.LoginScreen
+import dev.gustavoraposo.honey_money_mobile.ui.feature.auth.RegisterScreen
 import dev.gustavoraposo.honey_money_mobile.ui.feature.home.HomeScreen
 
 @Composable
@@ -21,6 +22,22 @@ fun AppNavGraph() {
                     navController.navigate("home/${Uri.encode(user.name)}") {
                         popUpTo("login") { inclusive = true }
                     }
+                },
+                onNavigateToRegister = {
+                    navController.navigate("register")
+                }
+            )
+        }
+
+        composable("register") {
+            RegisterScreen(
+                onRegisterSuccess = { user ->
+                    navController.navigate("home/${Uri.encode(user.name)}") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                },
+                onNavigateToLogin = {
+                    navController.popBackStack()
                 }
             )
         }

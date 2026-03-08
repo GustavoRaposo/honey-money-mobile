@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -37,35 +39,39 @@ import dev.gustavoraposo.honey_money_mobile.domain.model.User
 import dev.gustavoraposo.honey_money_mobile.ui.theme.HoneymoneymobileTheme
 
 @Composable
-fun LoginScreen(
-    viewModel: LoginViewModel = hiltViewModel(),
-    onLoginSuccess: (User) -> Unit = {},
-    onNavigateToRegister: () -> Unit = {}
+fun RegisterScreen(
+    viewModel: RegisterViewModel = hiltViewModel(),
+    onRegisterSuccess: (User) -> Unit = {},
+    onNavigateToLogin: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess && uiState.user != null) {
-            onLoginSuccess(uiState.user!!)
+            onRegisterSuccess(uiState.user!!)
         }
     }
 
-    LoginContent(
+    RegisterContent(
         uiState = uiState,
+        onNameChange = viewModel::onNameChange,
         onEmailChange = viewModel::onEmailChange,
         onPasswordChange = viewModel::onPasswordChange,
-        onLoginClick = viewModel::onLoginClick,
-        onNavigateToRegister = onNavigateToRegister
+        onConfirmPasswordChange = viewModel::onConfirmPasswordChange,
+        onRegisterClick = viewModel::onRegisterClick,
+        onNavigateToLogin = onNavigateToLogin
     )
 }
 
 @Composable
-private fun LoginContent(
-    uiState: LoginUiState,
+private fun RegisterContent(
+    uiState: RegisterUiState,
+    onNameChange: (String) -> Unit,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
-    onLoginClick: () -> Unit,
-    onNavigateToRegister: () -> Unit = {}
+    onConfirmPasswordChange: (String) -> Unit,
+    onRegisterClick: () -> Unit,
+    onNavigateToLogin: () -> Unit
 ) {
     val focusManager = LocalFocusManager.current
 
@@ -79,24 +85,47 @@ private fun LoginContent(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 32.dp),
+                    .padding(horizontal = 32.dp)
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
+                Spacer(modifier = Modifier.height(32.dp))
+
                 Text(
-                    text = "Honey Money",
+                    text = "Criar conta",
                     style = MaterialTheme.typography.headlineLarge
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Entre na sua conta",
+                    text = "Preencha seus dados para se cadastrar",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
+
+                OutlinedTextField(
+                    value = uiState.name,
+                    onValueChange = onNameChange,
+                    label = { Text("Nome") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("register_name_field"),
+                    isError = uiState.error != null
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 OutlinedTextField(
                     value = uiState.email,
@@ -112,7 +141,7 @@ private fun LoginContent(
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("login_email_field"),
+                        .testTag("register_email_field"),
                     isError = uiState.error != null
                 )
 
@@ -126,17 +155,38 @@ private fun LoginContent(
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("register_password_field"),
+                    isError = uiState.error != null
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = uiState.confirmPassword,
+                    onValueChange = onConfirmPasswordChange,
+                    label = { Text("Confirmar senha") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Done
                     ),
                     keyboardActions = KeyboardActions(
                         onDone = {
                             focusManager.clearFocus()
-                            onLoginClick()
+                            onRegisterClick()
                         }
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("login_password_field"),
+                        .testTag("register_confirm_password_field"),
                     isError = uiState.error != null
                 )
 
@@ -152,12 +202,12 @@ private fun LoginContent(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
-                    onClick = onLoginClick,
+                    onClick = onRegisterClick,
                     enabled = !uiState.isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
-                        .testTag("login_button")
+                        .testTag("register_button")
                 ) {
                     if (uiState.isLoading) {
                         CircularProgressIndicator(
@@ -166,18 +216,20 @@ private fun LoginContent(
                             strokeWidth = 2.dp
                         )
                     } else {
-                        Text("Entrar")
+                        Text("Cadastrar")
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 TextButton(
-                    onClick = onNavigateToRegister,
-                    modifier = Modifier.testTag("login_register_link")
+                    onClick = onNavigateToLogin,
+                    modifier = Modifier.testTag("register_login_link")
                 ) {
-                    Text("Não tem uma conta? Cadastre-se")
+                    Text("Já tenho uma conta. Entrar")
                 }
+
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }
@@ -185,13 +237,16 @@ private fun LoginContent(
 
 @Preview(showBackground = true)
 @Composable
-private fun LoginContentPreview() {
+private fun RegisterContentPreview() {
     HoneymoneymobileTheme {
-        LoginContent(
-            uiState = LoginUiState(),
+        RegisterContent(
+            uiState = RegisterUiState(),
+            onNameChange = {},
             onEmailChange = {},
             onPasswordChange = {},
-            onLoginClick = {}
+            onConfirmPasswordChange = {},
+            onRegisterClick = {},
+            onNavigateToLogin = {}
         )
     }
 }
