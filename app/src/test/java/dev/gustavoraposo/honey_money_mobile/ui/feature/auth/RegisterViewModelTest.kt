@@ -1,6 +1,7 @@
 package dev.gustavoraposo.honey_money_mobile.ui.feature.auth
 
 import dev.gustavoraposo.honey_money_mobile.domain.model.User
+import dev.gustavoraposo.honey_money_mobile.domain.usecase.LoginUseCase
 import dev.gustavoraposo.honey_money_mobile.domain.usecase.RegisterUseCase
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -23,6 +24,7 @@ import org.junit.Test
 class RegisterViewModelTest {
 
     private val registerUseCase: RegisterUseCase = mockk()
+    private val loginUseCase: LoginUseCase = mockk()
     private lateinit var viewModel: RegisterViewModel
     private val testDispatcher = UnconfinedTestDispatcher()
 
@@ -31,7 +33,7 @@ class RegisterViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        viewModel = RegisterViewModel(registerUseCase)
+        viewModel = RegisterViewModel(registerUseCase, loginUseCase)
     }
 
     @After
@@ -97,10 +99,13 @@ class RegisterViewModelTest {
     }
 
     @Test
-    fun `dado registro bem sucedido quando onRegisterClick chamado entao emite usuario no estado`() = runTest {
+    fun `dado cadastro e login bem sucedidos quando onRegisterClick chamado entao emite usuario no estado`() = runTest {
         coEvery {
             registerUseCase("Gustavo", "gustavo@email.com", "password123")
         } returns Result.success(fakeUser)
+        coEvery {
+            loginUseCase("gustavo@email.com", "password123")
+        } returns Result.success("access_token_jwt")
 
         viewModel.onNameChange("Gustavo")
         viewModel.onEmailChange("gustavo@email.com")
@@ -118,7 +123,7 @@ class RegisterViewModelTest {
     }
 
     @Test
-    fun `dado registro falha quando onRegisterClick chamado entao emite erro`() = runTest {
+    fun `dado cadastro falha quando onRegisterClick chamado entao emite erro sem chamar login`() = runTest {
         coEvery { registerUseCase(any(), any(), any()) } returns Result.failure(Exception("E-mail já cadastrado"))
 
         viewModel.onNameChange("Gustavo")
@@ -131,6 +136,24 @@ class RegisterViewModelTest {
         val state = viewModel.uiState.value
         assertFalse(state.isSuccess)
         assertEquals("E-mail já cadastrado", state.error)
+        assertNull(state.user)
+    }
+
+    @Test
+    fun `dado cadastro ok mas login falha quando onRegisterClick chamado entao emite erro`() = runTest {
+        coEvery { registerUseCase(any(), any(), any()) } returns Result.success(fakeUser)
+        coEvery { loginUseCase(any(), any()) } returns Result.failure(Exception("Erro ao realizar login"))
+
+        viewModel.onNameChange("Gustavo")
+        viewModel.onEmailChange("gustavo@email.com")
+        viewModel.onPasswordChange("password123")
+        viewModel.onConfirmPasswordChange("password123")
+
+        viewModel.onRegisterClick()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isSuccess)
+        assertEquals("Erro ao realizar login", state.error)
         assertNull(state.user)
     }
 

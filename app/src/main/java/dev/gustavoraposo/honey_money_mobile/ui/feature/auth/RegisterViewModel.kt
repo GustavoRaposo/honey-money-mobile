@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.gustavoraposo.honey_money_mobile.domain.model.User
+import dev.gustavoraposo.honey_money_mobile.domain.usecase.LoginUseCase
 import dev.gustavoraposo.honey_money_mobile.domain.usecase.RegisterUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,7 +26,8 @@ data class RegisterUiState(
 
 @HiltViewModel
 class RegisterViewModel @Inject constructor(
-    private val registerUseCase: RegisterUseCase
+    private val registerUseCase: RegisterUseCase,
+    private val loginUseCase: LoginUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RegisterUiState())
@@ -63,7 +65,16 @@ class RegisterViewModel @Inject constructor(
                 email = state.email,
                 password = state.password
             ).onSuccess { user ->
-                _uiState.update { it.copy(isLoading = false, isSuccess = true, user = user) }
+                loginUseCase(
+                    email = state.email,
+                    password = state.password
+                ).onSuccess {
+                    _uiState.update { it.copy(isLoading = false, isSuccess = true, user = user) }
+                }.onFailure { throwable ->
+                    _uiState.update {
+                        it.copy(isLoading = false, error = throwable.message ?: "Erro ao realizar login")
+                    }
+                }
             }.onFailure { throwable ->
                 _uiState.update {
                     it.copy(isLoading = false, error = throwable.message ?: "Erro desconhecido")
